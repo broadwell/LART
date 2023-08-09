@@ -90,7 +90,7 @@ def main(cfg: DictConfig) -> Optional[float]:
     # # Setup the tracker and track the video
     # cfg.phalp.low_th_c = 0.5
     cfg.phalp.small_w = 100
-    cfg.phalp.small_h = 200
+    cfg.phalp.small_h = 100
     cfg.render.enable = False
     phalp_tracker = HMR2_4dhuman(cfg)
     _, pkl_path = phalp_tracker.track()
