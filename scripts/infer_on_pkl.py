@@ -104,8 +104,7 @@ def main(cfg: DictConfig) -> Optional[float]:
     
     # Setup the LART model and run it on the tracked video to get the action predictions
     cfg = OmegaConf.structured(OmegaConf.to_yaml(cfg))
-    #cfg.render.enable = True
-    #cfg.render.colors = 'slahmr'
+    cfg.render.colors = 'slahmr'
     cfg.pose_predictor.config_path = f"{CACHE_DIR}/phalp/ava/lart_mvit.config"
     cfg.pose_predictor.weights_path = f"{CACHE_DIR}/phalp/ava/lart_mvit.ckpt"
     try:    cfg.pose_predictor.half = cfg.half
