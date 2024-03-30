@@ -120,8 +120,10 @@ def main(cfg: DictConfig) -> Optional[float]:
 
     log.info(f"Extracting action data to smaller, CPU-friendly .pkl file")
 
+    lart_pkl_path = f"outputs/results_temporal/{Path(pkl_path).name}"
+ 
     pkl_data = {} 
-    with open(pkl_path, "rb") as pkl_file:
+    with open(lart_pkl_path, "rb") as pkl_file:
         phalp_data = joblib.load(pkl_file)
     for frame_key in phalp_data:
         pkl_data[frame_key] = { "time": phalp_data[frame_key]["time"], "tracked_ids": phalp_data[frame_key]["tracked_ids"], "tid": phalp_data[frame_key]["tid"] }
@@ -130,7 +132,7 @@ def main(cfg: DictConfig) -> Optional[float]:
         if "ava_action" in phalp_data[frame_key]:
             pkl_data[frame_key]["ava_action"] = phalp_data[frame_key]["ava_action"]
 
-    with open(f"{os.path.splitext(pkl_path)[0]}_lart.pkl", "wb") as pkl_out:
+    with open(f"{os.path.splitext(lart_pkl_path)[0]}_lart.pkl", "wb") as pkl_out:
         joblib.dump(pkl_data, pkl_out)
 
 
