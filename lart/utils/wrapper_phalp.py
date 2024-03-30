@@ -155,8 +155,10 @@ class Pose_transformer(nn.Module):
         cfg.TEST.CHECKPOINT_FILE_PATH=f"{CACHE_DIR}/phalp/ava/mvit.pyth"
 
         video_model    = Predictor(cfg=cfg, gpu_id=None)
-        if(self.phalp_cfg.pose_predictor.half):
+        half_mode = False
+        if(("half" in self.phalp_cfg.pose_predictor) and self.phalp_cfg.pose_predictor.half):
             video_model.model = video_model.model.half()
+            half_mode = True
         seq_length     = cfg.DATA.NUM_FRAMES * cfg.DATA.SAMPLING_RATE
 
         list_of_frames = fast_track['frame_name']
@@ -200,7 +202,7 @@ class Pose_transformer(nn.Module):
             # img1 = cv2.rectangle(img1, (mid_bbox_[0, 0], mid_bbox_[0, 1]), (mid_bbox_[0, 2], mid_bbox_[0, 3]), (0, 255, 0), 2)
             # cv2.imwrite("test.png", img1)
             with torch.no_grad():
-                task_      = SlowFastWrapper(t_, cfg, list_of_all_frames, mid_bbox_, video_model, center_crop=center_crop, half=self.phalp_cfg.pose_predictor.half)
+                task_      = SlowFastWrapper(t_, cfg, list_of_all_frames, mid_bbox_, video_model, center_crop=center_crop, half=half_mode)
                 preds      = task_.action_preds[0]
                 feats      = task_.action_preds[1]
                 preds      = preds.cpu().numpy()
@@ -253,7 +255,7 @@ class Pose_transformer(nn.Module):
         w_steps = range(S_, S_+fl, STEP_)
         assert 2*WINDOW_ + STEP_ < self.cfg.frame_length
 
-        if(self.phalp_cfg.pose_predictor.half):
+        if(("half" in self.phalp_cfg.pose_predictor) and self.phalp_cfg.pose_predictor.half):
             self.encoder = self.encoder.half()
             STORE_OUTPUT_ = torch.zeros(1, fl, self.cfg.in_feat, dtype=torch.float16)
         else:
@@ -289,7 +291,7 @@ class Pose_transformer(nn.Module):
                 apperance_[:, :end_-start_, :, :] = torch.tensor(apperance_feat_all[:, start_:end_, :, :])
                 input_data["apperance_emb"] = apperance_
 
-            if(self.phalp_cfg.pose_predictor.half):
+            if(("half" in self.phalp_cfg.pose_predictor) and self.phalp_cfg.pose_predictor.half):
                 input_data = {k: v.cuda().half() for k, v in input_data.items()}
             else:
                 input_data = {k: v.cuda() for k, v in input_data.items()}

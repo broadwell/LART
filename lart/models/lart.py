@@ -51,6 +51,8 @@ class LART_LitModule(LightningModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False,)
         self.cfg = self.hparams.cfg
+
+        print("LART cfg", self.cfg)
         
         # for averaging loss across batches
         self.train_loss = MeanMetric()
