@@ -2,6 +2,7 @@ import gc
 import os
 import warnings
 from dataclasses import dataclass
+import joblib
 from pathlib import Path
 from typing import Optional
 
@@ -99,7 +100,7 @@ def main(cfg: DictConfig) -> Optional[float]:
     #with torch.no_grad():
     #    torch.cuda.empty_cache()
 
-    pkl_path = cfg.pkl_path # "outputs/results/demo_jump.pkl"
+    pkl_path = cfg.pkl_path
     
     # Setup the LART model and run it on the tracked video to get the action predictions
     cfg = OmegaConf.structured(OmegaConf.to_yaml(cfg))
@@ -113,7 +114,25 @@ def main(cfg: DictConfig) -> Optional[float]:
 
     lart_model = LART(cfg)
     lart_model.setup_postprocessor()
+    
+    log.info(f"Running LART on .pkl output from PHALP")
     lart_model.postprocessor.run_lart(pkl_path)
+
+    log.info(f"Extracting action data to smaller, CPU-friendly .pkl file")
+
+    pkl_data = {} 
+    with open(pkl_path, "rb") as pkl_file:
+        phalp_data = joblib.load(pkl_file)
+    for frame_key in phalp_data:
+        pkl_data[frame_key] = { "time": phalp_data[frame_key]["time"], "tracked_ids": phalp_data[frame_key]["tracked_ids"], "tid": phalp_data[frame_key]["tid"] }
+        if "label" in phalp_data[frame_key]:
+            pkl_data[frame_key]["label"] = phalp_data[frame_key]["label"]
+        if "ava_action" in phalp_data[frame_key]:
+            pkl_data[frame_key]["ava_action"] = phalp_data[frame_key]["ava_action"]
+
+    with open(f"{os.path.splitext(pkl_path)[0]}_lart.pkl", "wb") as pkl_out:
+        joblib.dump(pkl_data, pkl_out)
+
 
 if __name__ == "__main__":
     main()
