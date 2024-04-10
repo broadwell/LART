@@ -104,7 +104,7 @@ def main(cfg: DictConfig) -> Optional[float]:
     
     # Setup the LART model and run it on the tracked video to get the action predictions
     cfg = OmegaConf.structured(OmegaConf.to_yaml(cfg))
-    cfg.render.colors = 'slahmr'
+    #cfg.render.colors = 'slahmr'
     cfg.pose_predictor.config_path = f"{CACHE_DIR}/phalp/ava/lart_mvit.config"
     cfg.pose_predictor.weights_path = f"{CACHE_DIR}/phalp/ava/lart_mvit.ckpt"
     try:    cfg.pose_predictor.half = cfg.half
@@ -119,7 +119,7 @@ def main(cfg: DictConfig) -> Optional[float]:
 
     log.info(f"Extracting action data to smaller, CPU-friendly .pkl file")
 
-    lart_pkl_path = f"outputs/results_temporal/{Path(pkl_path).name}"
+    lart_pkl_path = f"outputs/results_temporal/{'.'.join(Path(pkl_path).name.split('.')[:-3])}.lart.pkl"
  
     pkl_data = {} 
     with open(lart_pkl_path, "rb") as pkl_file:
@@ -131,7 +131,8 @@ def main(cfg: DictConfig) -> Optional[float]:
         if "ava_action" in phalp_data[frame_key]:
             pkl_data[frame_key]["ava_action"] = phalp_data[frame_key]["ava_action"]
 
-    with open(f"{os.path.splitext(lart_pkl_path)[0]}_lart.pkl", "wb") as pkl_out:
+    friendly_pkl_path = f"outputs/results_temporal/{'.'.join(Path(pkl_path).name.split('.')[:-1])}.lart.pkl"
+    with open(friendly_pkl_path, "wb") as pkl_out:
         joblib.dump(pkl_data, pkl_out)
 
 
