@@ -9,6 +9,12 @@ from omegaconf import OmegaConf
 from phalp.configs.base import CACHE_DIR
 from torch import nn
 
+from slowfast.config.defaults import assert_and_infer_cfg
+from slowfast.utils.parser import load_config, parse_args
+from slowfast.visualization.predictor import ActionPredictor, Predictor
+
+from lart.utils.wrapper_pyslowfast import SlowFastWrapper
+
 from lart.models.components.lart_transformer.transformer import \
     lart_transformer
 
@@ -43,6 +49,24 @@ class Pose_transformer(nn.Module):
         self.mean_, self.std_ = self.mean_.unsqueeze(0), self.std_.unsqueeze(0)   
         self.register_buffer('mean', self.mean_)
         self.register_buffer('std', self.std_)
+
+        # slowfast settings
+        device = 'cuda'
+        self.slowfast_path_to_config = f"{CACHE_DIR}/phalp/ava/mvit.yaml"
+        self.center_crop = True
+
+        self.cfg.opts = None
+        self.slowfast_cfg = load_config(self.cfg, self.slowfast_path_to_config)
+        self.slowfast_cfg = assert_and_infer_cfg(self.slowfast_cfg)
+        self.slowfast_cfg.TEST.CHECKPOINT_FILE_PATH=f"{CACHE_DIR}/phalp/ava/mvit.pyth"
+
+        self.video_model    = Predictor(cfg=self.slowfast_cfg, gpu_id=device)
+        self.half_mode = False
+        if(("half" in self.phalp_cfg.pose_predictor) and self.phalp_cfg.pose_predictor.half):
+            self.video_model.model = self.video_model.model.half()
+            self.half_mode = True
+        self.seq_length     = self.slowfast_cfg.DATA.NUM_FRAMES * self.slowfast_cfg.DATA.SAMPLING_RATE
+
                     
     def load_weights(self, path):
         checkpoint_file = torch.load(path)
@@ -139,27 +163,6 @@ class Pose_transformer(nn.Module):
     
     def add_slowfast_features(self, fast_track):
         # add slowfast features to the fast track
-        from slowfast.config.defaults import assert_and_infer_cfg
-        from slowfast.utils.parser import load_config, parse_args
-        from slowfast.visualization.predictor import ActionPredictor, Predictor
-
-        from lart.utils.wrapper_pyslowfast import SlowFastWrapper
-
-        device = 'cuda'
-        path_to_config = f"{CACHE_DIR}/phalp/ava/mvit.yaml"
-        center_crop = True
-
-        self.cfg.opts = None
-        cfg = load_config(self.cfg, path_to_config)
-        cfg = assert_and_infer_cfg(cfg)
-        cfg.TEST.CHECKPOINT_FILE_PATH=f"{CACHE_DIR}/phalp/ava/mvit.pyth"
-
-        video_model    = Predictor(cfg=cfg, gpu_id=None)
-        half_mode = False
-        if(("half" in self.phalp_cfg.pose_predictor) and self.phalp_cfg.pose_predictor.half):
-            video_model.model = video_model.model.half()
-            half_mode = True
-        seq_length     = cfg.DATA.NUM_FRAMES * cfg.DATA.SAMPLING_RATE
 
         list_of_frames = fast_track['frame_name']
         list_of_bbox   = fast_track['frame_bbox']
@@ -170,7 +173,7 @@ class Pose_transformer(nn.Module):
         fast_track['has_gt'] = []
 
         NUM_STEPS        = 6 # 5Hz
-        NUM_FRAMES       = seq_length
+        NUM_FRAMES       = self.seq_length
         list_iter        = list(range(len(list_of_frames)//NUM_STEPS + 1))
 
         for t_, time_stamp in enumerate(list_iter):    
@@ -202,7 +205,7 @@ class Pose_transformer(nn.Module):
             # img1 = cv2.rectangle(img1, (mid_bbox_[0, 0], mid_bbox_[0, 1]), (mid_bbox_[0, 2], mid_bbox_[0, 3]), (0, 255, 0), 2)
             # cv2.imwrite("test.png", img1)
             with torch.no_grad():
-                task_      = SlowFastWrapper(t_, cfg, list_of_all_frames, mid_bbox_, video_model, center_crop=center_crop, half=half_mode)
+                task_      = SlowFastWrapper(t_, self.slowfast_cfg, list_of_all_frames, mid_bbox_, self.video_model, center_crop=self.center_crop, half=self.half_mode)
                 preds      = task_.action_preds[0]
                 feats      = task_.action_preds[1]
                 preds      = preds.cpu().numpy()
