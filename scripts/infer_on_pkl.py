@@ -99,8 +99,6 @@ def main(cfg: DictConfig) -> Optional[float]:
     #gc.collect()
     #with torch.no_grad():
     #    torch.cuda.empty_cache()
-    # This is meant to eliminate the need to extract all images from the video first
-    cfg.video.extract_video = False
 
     pkl_path = cfg.pkl_path
     
