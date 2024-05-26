@@ -112,14 +112,11 @@ def main(cfg: DictConfig) -> Optional[float]:
     except: cfg.pose_predictor.half = False
     log.info(f"Half precision: {cfg.pose_predictor.half}")
 
-    # This also functions as a cache of current progress
-    cfg.post_process.save_fast_tracks = True
-
     lart_model = LART(cfg)
     lart_model.setup_postprocessor()
     
     log.info(f"Running LART on .pkl output from PHALP")
-    lart_model.postprocessor.run_lart(pkl_path)
+    lart_model.postprocessor.run_lart(pkl_path, save_fast_tracks=True)
 
     # log.info(f"Extracting action data to smaller, CPU-friendly .pkl file")
 
