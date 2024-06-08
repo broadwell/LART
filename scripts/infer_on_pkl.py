@@ -115,27 +115,8 @@ def main(cfg: DictConfig) -> Optional[float]:
     lart_model = LART(cfg)
     lart_model.setup_postprocessor()
     
-    log.info(f"Running LART on .pkl output from PHALP")
+    log.info("Running LART on .pkl output from PHALP")
     lart_model.postprocessor.run_lart(pkl_path, save_fast_tracks=True)
-
-    # log.info(f"Extracting action data to smaller, CPU-friendly .pkl file")
-
-    # pkl_path_stem = re.sub(r'\.phalp(\.lart)?\.pkl.*$', '', Path(pkl_path).name)
-    # lart_pkl_path = f"outputs/results_temporal/{pkl_path_stem}.phalp.lart.pkl"
-    # friendly_pkl_path = f"outputs/results_temporal/{pkl_path_stem}.lart.pkl"
-
-    # pkl_data = {} 
-    # with open(lart_pkl_path, "rb") as pkl_file:
-    #     phalp_data = joblib.load(pkl_file)
-    # for frame_key in phalp_data:
-    #     pkl_data[frame_key] = { "time": phalp_data[frame_key]["time"], "tracked_ids": phalp_data[frame_key]["tracked_ids"], "tid": phalp_data[frame_key]["tid"] }
-    #     if "label" in phalp_data[frame_key]:
-    #         pkl_data[frame_key]["label"] = phalp_data[frame_key]["label"]
-    #     if "ava_action" in phalp_data[frame_key]:
-    #         pkl_data[frame_key]["ava_action"] = phalp_data[frame_key]["ava_action"]
-
-    # with open(friendly_pkl_path, "wb") as pkl_out:
-    #     joblib.dump(pkl_data, pkl_out)
 
 
 if __name__ == "__main__":
